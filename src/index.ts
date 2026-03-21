@@ -41,6 +41,40 @@ function createServer() {
     })
   );
 
+  server.tool(
+    "http_post",
+    "Send an HTTP POST request to any URL with a JSON body and optional headers",
+    {
+      url: z.string().url().describe("The URL to POST to"),
+      body: z.record(z.unknown()).describe("The JSON request body"),
+      headers: z.record(z.string()).optional().describe("Optional HTTP headers"),
+    },
+    async ({ url, body, headers }) => {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(body),
+      });
+
+      const text = await res.text();
+      let pretty: string;
+      try {
+        pretty = JSON.stringify(JSON.parse(text), null, 2);
+      } catch {
+        pretty = text;
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `HTTP ${res.status} ${res.statusText}\n\n${pretty}`,
+          },
+        ],
+      };
+    }
+  );
+
   // ─── Resources ─────────────────────────────────────────────────────────────
 
   server.resource(
