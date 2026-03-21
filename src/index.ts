@@ -88,18 +88,28 @@ const sessions = new Map<
   { server: McpServer; transport: StreamableHTTPServerTransport }
 >();
 
+function log(method: string, path: string, detail?: string) {
+  const ts = new Date().toISOString();
+  const parts = [`[${ts}] ${method} ${path}`];
+  if (detail) parts.push(`→ ${detail}`);
+  console.log(parts.join(" "));
+}
+
 const app = createMcpExpressApp({ host: HOST });
 
 app.post("/mcp", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
+  const method = req.body?.method ?? "unknown";
 
   // Resume existing session
   if (sessionId) {
     const session = sessions.get(sessionId);
     if (!session) {
+      log("POST", "/mcp", `session ${sessionId} not found`);
       res.status(404).json({ error: "Session not found" });
       return;
     }
+    log("POST", "/mcp", `session=${sessionId} method=${method}`);
     await session.transport.handleRequest(req, res, req.body);
     return;
   }
@@ -109,12 +119,16 @@ app.post("/mcp", async (req, res) => {
     sessionIdGenerator: () => randomUUID(),
     onsessioninitialized(id) {
       sessions.set(id, { server, transport });
+      log("POST", "/mcp", `new session=${id}`);
     },
   });
 
   transport.onclose = () => {
     const id = transport.sessionId;
-    if (id) sessions.delete(id);
+    if (id) {
+      sessions.delete(id);
+      log("CLOSE", "/mcp", `session=${id} closed`);
+    }
   };
 
   const server = createServer();
@@ -126,14 +140,17 @@ app.post("/mcp", async (req, res) => {
 app.get("/mcp", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
   if (!sessionId) {
+    log("GET", "/mcp", "missing mcp-session-id");
     res.status(400).json({ error: "Missing mcp-session-id header" });
     return;
   }
   const session = sessions.get(sessionId);
   if (!session) {
+    log("GET", "/mcp", `session ${sessionId} not found`);
     res.status(404).json({ error: "Session not found" });
     return;
   }
+  log("GET", "/mcp", `SSE stream opened session=${sessionId}`);
   await session.transport.handleRequest(req, res);
 });
 
