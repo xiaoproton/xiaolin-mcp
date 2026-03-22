@@ -52,8 +52,8 @@ function createServer() {
     async ({ url, body, headers }) => {
       const res = await fetch(url, {
         method: "POST",
-        headers: headers,
-        body: body
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(body),
       });
 
       const text = await res.text();
