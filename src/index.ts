@@ -14,40 +14,45 @@ function createServer() {
 
   // ─── Tools ─────────────────────────────────────────────────────────────────
 
-  server.tool(
+  server.registerTool(
     "add",
-    "Add two numbers together",
-    { a: z.number().describe("First number"), b: z.number().describe("Second number") },
+    {
+      description: "Add two numbers together",
+      inputSchema: { a: z.number().describe("First number"), b: z.number().describe("Second number") },
+    },
     async ({ a, b }) => ({
       content: [{ type: "text", text: String(a + b) }],
     })
   );
 
-  server.tool(
+  server.registerTool(
     "echo",
-    "Echo a message back to the caller",
-    { message: z.string().describe("Message to echo") },
+    {
+      description: "Echo a message back to the caller",
+      inputSchema: { message: z.string().describe("Message to echo") },
+    },
     async ({ message }) => ({
       content: [{ type: "text", text: message }],
     })
   );
 
-  server.tool(
+  server.registerTool(
     "get_time",
-    "Return the current UTC date and time",
-    {},
+    { description: "Return the current UTC date and time" },
     async () => ({
       content: [{ type: "text", text: new Date().toISOString() }],
     })
   );
 
-  server.tool(
+  server.registerTool(
     "http_post",
-    "Send an HTTP POST request to any URL with a JSON body and optional headers",
     {
-      url: z.string().url().describe("The URL to POST to"),
-      body: z.record(z.unknown()).describe("The JSON request body"),
-      headers: z.record(z.string()).optional().describe("Optional HTTP headers"),
+      description: "Send an HTTP POST request to any URL with a JSON body and optional headers",
+      inputSchema: {
+        url: z.string().url().describe("The URL to POST to"),
+        body: z.record(z.unknown()).describe("The JSON request body"),
+        headers: z.record(z.string()).optional().describe("Optional HTTP headers"),
+      },
     },
     async ({ url, body, headers }) => {
       const res = await fetch(url, {
@@ -65,22 +70,19 @@ function createServer() {
       }
 
       return {
-        content: [
-          {
-            type: "text",
-            text: `HTTP ${res.status} ${res.statusText}\n\n${pretty}`,
-          },
-        ],
+        content: [{ type: "text", text: `HTTP ${res.status} ${res.statusText}\n\n${pretty}` }],
       };
     }
   );
 
-  server.tool(
+  server.registerTool(
     "http_get",
-    "Send an HTTP GET request to any URL and return the response (JSON or HTML)",
     {
-      url: z.string().url().describe("The URL to GET"),
-      headers: z.record(z.string()).optional().describe("Optional HTTP headers"),
+      description: "Send an HTTP GET request to any URL and return the response (JSON or HTML)",
+      inputSchema: {
+        url: z.string().url().describe("The URL to GET"),
+        headers: z.record(z.string()).optional().describe("Optional HTTP headers"),
+      },
     },
     async ({ url, headers }) => {
       const res = await fetch(url, {
@@ -97,12 +99,7 @@ function createServer() {
       }
 
       return {
-        content: [
-          {
-            type: "text",
-            text: `HTTP ${res.status} ${res.statusText}\n\n${pretty}`,
-          },
-        ],
+        content: [{ type: "text", text: `HTTP ${res.status} ${res.statusText}\n\n${pretty}` }],
       };
     }
   );
