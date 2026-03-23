@@ -75,6 +75,38 @@ function createServer() {
     }
   );
 
+  server.tool(
+    "http_get",
+    "Send an HTTP GET request to any URL and return the response (JSON or HTML)",
+    {
+      url: z.string().url().describe("The URL to GET"),
+      headers: z.record(z.string()).optional().describe("Optional HTTP headers"),
+    },
+    async ({ url, headers }) => {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { ...headers },
+      });
+
+      const text = await res.text();
+      let pretty: string;
+      try {
+        pretty = JSON.stringify(JSON.parse(text), null, 2);
+      } catch {
+        pretty = text;
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `HTTP ${res.status} ${res.statusText}\n\n${pretty}`,
+          },
+        ],
+      };
+    }
+  );
+
   // ─── Resources ─────────────────────────────────────────────────────────────
 
   server.resource(
